@@ -1,4 +1,4 @@
-# IB-alog-trade---Dimsumquant
+# IB-algo-trade---Dimsumquant
 Dimsumquant Group aim at getting 10%~15% annual return in long run. I am one of the teammate.
 
 Our working enviornment is below:
