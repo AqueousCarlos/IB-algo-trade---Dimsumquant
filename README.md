@@ -17,5 +17,5 @@ Demonstrate how intraday bars are changed to daily bar
 # Pattern recognition
 Contain the famous pattern - cup and handle pattern recognition
 
-#Portfolio
+# Portfolio
 VaR (value at risk) , portfolio analysis
