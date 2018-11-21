@@ -1,0 +1,206 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Jun 16 10:10:55 2018
+
+@author: Aqueous Carlos
+"""
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from datetime import datetime
+import numpy as np
+import time
+from scipy import stats
+import statsmodels.api as sm
+
+SP500 = pd.read_csv('^GSPC.csv', 
+                   index_col='Date', parse_dates=True)  
+
+IXIC = pd.read_csv('^IXIC.csv', 
+                   index_col='Date', parse_dates=True)  
+
+JD = pd.read_csv('JD.csv', 
+                   index_col='Date', parse_dates=True)  
+    
+GS = pd.read_csv('GS.csv', 
+                    index_col='Date', parse_dates=True) 
+
+KHC = pd.read_csv('KHC.csv', 
+                   index_col='Date', parse_dates=True)  
+    
+MCD = pd.read_csv('MCD.csv', 
+                    index_col='Date', parse_dates=True) 
+
+TAL = pd.read_csv('TAL.csv', 
+                   index_col='Date', parse_dates=True)  
+
+# mydata.loc[mydata.Date >= ts, :]
+
+mydata = pd.concat([SP500['Close'], IXIC['Close'], JD['Close'], GS['Close'], 
+                    KHC['Close'], MCD['Close'], TAL['Close']], axis=1)
+
+mydata.columns = ['SP500 Close', 'IXIC Close', 'JD Close', 
+                  'GS Close', 'KHC Close', 'MCD Close', 'TAL Close']
+
+rng = mydata.loc['10/1/2015':'31/5/2018']
+
+
+# Log return for an individual stock
+returns_1 = np.log(rng / rng.shift(1))
+print('Log annual avg return %: \n' + str(round(returns_1[['SP500 Close', 'IXIC Close', 'JD Close',
+                                                         'GS Close', 'KHC Close','MCD Close',
+                                                         'TAL Close']].mean(), 5) * 250 *100))
+
+print('Log annual IV %: \n' + str((round(returns_1[['SP500 Close', 'IXIC Close', 'JD Close',
+                                                  'GS Close','KHC Close','MCD Close',
+                                                  'TAL Close']].std() * 250 ** 0.5, 5))* 100))
+
+print('Log annual variance %: \n' + str((round(returns_1[['SP500 Close', 'IXIC Close', 'JD Close',
+                                                  'GS Close','KHC Close','MCD Close',
+                                                  'TAL Close']].var() * 250, 5))* 100))
+
+# Covariance and Correlation
+covariance = returns_1.cov() *250
+print('Covariance: \n' + str(covariance))
+
+Correlation = returns_1.corr()
+print('Correlation: \n' + str(Correlation))
+
+# Univariate Regression / Multivariate Regression
+X = rng['IXIC Close'] # 'JD Close', 'GS Close', 'KHC Close', 'MCD Close', 'TAL Close'
+Y = rng['SP500 Close']
+
+# regression summary
+X1 = sm.add_constant(X)
+reg = sm.OLS(Y, X1).fit()
+print(reg.summary())
+
+# Alpha, Beta, and R Squared 
+slope, intercept, r_value, p_value, std_err = stats.linregress(X,Y)
+print('Slope: ' + str(round(slope,3)))
+print('Intercept: ' + str(round(intercept,3)))
+print('r_value: ' + str(round(r_value,3)))
+print('r_value ** 2: ' + str(round(r_value ** 2, 3)))
+print('p_value: ' + str(p_value))
+print('std_err: ' + str(round(std_err, 3)))
+
+
+SP500_a = returns_1['SP500 Close'].var() * 250
+IXIC_a =  returns_1['IXIC Close'].var() * 250
+JD_a =  returns_1['JD Close'].var() * 250
+GS_a =  returns_1['IXIC Close'].var() * 250
+KHC_a =  returns_1['KHC Close'].var() * 250
+MCD_a =  returns_1['MCD Close'].var() * 250
+TAL_a =  returns_1['TAL Close'].var() * 250
+
+#Beta of a stock
+cov_with_market = covariance.iloc[0,1]
+print('Beta of SP500:' + str(cov_with_market / SP500_a))
+print('Beta of IXIC:' + str(cov_with_market / IXIC_a))
+print('Beta of JD:' + str(cov_with_market / JD_a))
+print('Beta of GS:' + str(cov_with_market / GS_a))
+print('Beta of KHC:' + str(cov_with_market / KHC_a))
+print('Beta of MCD:' + str(cov_with_market / MCD_a))
+print('Beta of TAL:' + str(cov_with_market / TAL_a))
+
+# Sharpe ratio
+SP500_beta = cov_with_market / SP500_a
+# non risk rate in us is 2.5%
+SP500_er = 0.025 + SP500_beta * 0.05
+SP500_Sharpe = (SP500_er - 0.025) / (returns_1['SP500 Close'].std() * 250 ** 0.5)
+print('SP500_Sharpe ratio:' + str(SP500_Sharpe))
+
+#plot graph Scatter x y
+plt.scatter(X,Y)
+plt.axis([0, 8000, 0, 3000])
+plt.ylabel('SP500 Close')
+plt.xlabel('IXIC Close')
+plt.show()
+
+# plot graph Normaliztion to 100
+(rng / rng.iloc[0] * 100).plot(figsize = (15, 8));
+plt.show()
+
+# plot graph without normalization
+rng.plot(figsize = (15,8))
+plt.show()
+
+
+# calculating the return of a portfolio of securities
+returns = (rng / rng.shift(1)) -1 
+weights = np.array([0.1, 0.1, 0.2, 0.2, 0.2, 0.1, 0.1])
+weights_2 = np.array([0.10, 0.10, 0.15, 0.20, 0.2, 0.05, 0.2])
+annual_returns = returns.mean() * 250
+
+# overall portifolio anuual return with weight
+print('Overall Portifolio annual return %: ' + str(round(np.dot(annual_returns, 
+                                                                weights),4) * 100) + ' %')
+
+# weight 2
+print('Overall Portifolio 2 annual return %: ' + str(round(np.dot(annual_returns, 
+                                                                  weights_2),4) * 100) + ' %')
+# Portfolio Covariance
+pfolio_var = np.dot(weights.T, np.dot(returns_1.cov() * 250, weights))
+
+# Portfolio Volatility:
+pfolio_vol = (np.dot(weights.T, np.dot(returns_1.cov() * 250, weights))) ** 0.5 * 100
+print('Portfolio Volatility: ' + str(round(pfolio_vol, 4)) + ' %')
+
+# Portfolio Diversifiable risk
+dr = pfolio_var - (weights[0] ** 2 * SP500_a) - (weights[1] ** 2 * IXIC_a) - (weights[2] ** 2 * JD_a) - (weights[3] ** 2 * GS_a) - (weights[4] ** 2 * KHC_a) - (weights[5] ** 2 * MCD_a) - (weights[5] ** 2 * TAL_a)
+print('Portfolio Diversifiable risk: ' + str(round(dr*100, 3)) + ' %')
+
+# Portfolio Non Diversifiable risk
+ndr = pfolio_var - dr
+print('Portfolio Non Diversifiable risk: ' + str(round(ndr*100, 3)) + ' %')
+
+# Efficient Frontier
+assets = ['SP 500', 'IXIC', 'JD', 'GS', 'KHC', 'MCD', 'TAL']
+num_assets = len(assets)
+
+arr = np.random.random(2)
+arr[0] + arr[1]
+weights_3 = np.random.random(num_assets)
+weights_3 /= np.sum(weights_3)
+weights_3[0] + weights_3[1]
+
+# Expected Portolio Return (Random)
+EPR = np.sum(weights_3 * returns_1.mean()) * 250 * 100
+# print('Expected Portolio Return (Random): ' + str(np.around(EPR, decimals = 3))  + ' %')
+
+# Expected Portolio Variance (Random)
+EPVar = np.dot(weights_3.T, np.dot(returns_1.cov() * 250, weights_3)) *100
+# print('Expected Portolio Variance (Random): ' + str(np.around(EPVar, decimals = 3))  + ' %')
+
+# Expected Portolio Volatility (Random)
+EPVol = np.sqrt(EPVar)
+# print('Expected Portolio Volatility (Random): ' + str(np.around(EPVol, decimals = 3))  + ' %')
+
+#set up array to hold results
+#We have increased the size of the array to hold the weight values for each stock
+results = np.zeros((7+len(assets)-1,2600))
+
+pfolio_returns = []
+pfolio_volatilities = []
+
+for x in range (2600):
+    weights_3 = np.random.random(num_assets)
+    weights_3 /= np.sum(weights_3)
+    pfolio_returns.append(np.sum(weights_3 * returns_1.mean()) * 250 *100)
+    pfolio_volatilities.append(np.sqrt(np.dot(weights_3.T, np.dot(returns_1.cov() * 250, weights_3))) *100)
+ 
+# 1.0 plot graph
+pfolio_returns_0 = np.array(pfolio_returns)
+pfolio_volatilities_0 = np.array(pfolio_volatilities)
+pfolio_returns = np.around(pfolio_returns_0, decimals =3)
+pfolio_volatilities = np. around(pfolio_volatilities_0, decimals =3)
+
+print('Max Expected Portolio Return (Random): ' + str(np.max(pfolio_returns)) + ' %')
+print('Min Expected Portolio Return (Random): ' + str(np.min(pfolio_returns)) + ' %')
+print('Avg Expected Portolio Return (Random): ' + str(np.mean(pfolio_returns)) + ' %')
+
+portfolios = pd.DataFrame({'Return': pfolio_returns, 'Volatility': pfolio_volatilities})
+portfolios.plot(x='Volatility', y='Return', kind='scatter', figsize=(10,6));
+plt.xlabel('Expected Volatility %')
+plt.ylabel('Expected Return %')
+
